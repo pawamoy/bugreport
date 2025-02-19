@@ -1,0 +1,83 @@
+name: Bug report
+description: Create a report to help us improve.
+title: "bug: "
+labels:
+- unconfirmed
+assignees: [pawamoy]
+
+body:
+
+- type: markdown
+  attributes:
+    value: Thank you for taking the time to report a bug 🐛🙂!
+
+- type: textarea
+  id: description
+  validations:
+    required: true
+  attributes:
+    label: Bug description
+    description: Please provide a clear and concise description of what the bug is.
+    placeholder: Describe the bug here.
+
+- type: textarea
+  id: mre
+  validations:
+    required: true
+  attributes:
+    label: Reproduction instructions
+    description: |
+      Please provide a Minimal Reproducible Example (MRE) if possible.
+      Try to boil down the problem to a few lines of code.
+      Your code should run by simply copying and pasting it.
+    placeholder: Write MRE/instructions here, or paste ZIP archive.
+    value: |
+      ```bash
+      git clone https://github.com/username/repro
+      cd repro
+      uv run python bug.py  # or any command/code showing the issue
+      ```
+
+- type: textarea
+  id: traceback
+  validations:
+    required: true
+  attributes:
+    label: Full traceback
+    description: |
+      Please provide the full error message / traceback if any, by pasting it below.
+      This will be automatically formatted into a code block, so no need for backticks.
+      No screenshots please!
+    placeholder: Paste the full traceback here.
+    render: pycon
+
+- type: textarea
+  id: expected
+  validations:
+    required: true
+  attributes:
+    label: Expected behavior
+    description: Please provide a clear and concise description of what you expected to happen.
+    placeholder: Describe the expected behavior here.
+
+- type: textarea
+  id: environment
+  validations:
+    required: true
+  attributes:
+    label: Environment information
+    description: |
+      Please run the following command in your repository and paste its output below it,
+      redacting sensitive information: `bugreport --debug-info`.
+    placeholder: Paste the output of `bugreport --debug-info` here.
+
+- type: textarea
+  id: context
+  validations:
+    required: false
+  attributes:
+    label: Additional context
+    description: |
+      Add any other relevant context about the problem here,
+      like links to other issues or pull requests, screenshots, etc.
+    placeholder: Add any other context here.
