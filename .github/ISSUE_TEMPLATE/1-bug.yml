@@ -20,6 +20,50 @@ body:
     description: Please provide a clear and concise description of what the bug is.
     placeholder: Describe the bug here.
 
+- type: markdown
+  attributes:
+    value: |
+      <!--
+      bugreport:
+      - id: mre-option
+        description: |
+          The next section is about providing a Minimal Reproducible Example (MRE).
+          You have two options to provide one:
+        choices:
+          1: |
+            Write the path to a local file or folder, or the URL to a public Git repository,
+            as well as commands to run to reproduce the issue, or the path to a local script
+            containing these commands.
+          2: Write the code and commands to run to reproduce the issue directly in the text area.
+      - id: mre
+        when: mre-option == 1
+        inputs:
+        - id: mre-path
+          type: input
+          required: true
+          label: Path or URL
+          description: |
+            Write the path to a local MRE (file or folder), or the URL to a public Git repository,
+            containing the code to reproduce the issue.
+          placeholder: Path or URL
+        - id: mre-commands
+          type: textarea
+          required: true
+          label: Commands
+          description: |
+            Write the commands to run to reproduce the issue, or the path to a local script
+            containing these commands.
+        output: |
+          {% if inputs["path"] | is_url %}
+          git clone {{ inputs["path"] }}
+          {% else %}
+          {% for file in inputs["path"] | ls %}
+          {{ file | cat }}
+          {% endfor %}
+          {% endif %}
+          {{ inputs["commands"] }}
+      -->
+
 - type: textarea
   id: mre
   validations:
@@ -47,7 +91,6 @@ body:
     description: |
       Please provide the full error message / traceback if any, by pasting it below.
       This will be automatically formatted into a code block, so no need for backticks.
-      No screenshots please!
     placeholder: Paste the full traceback here.
     render: pycon
 
