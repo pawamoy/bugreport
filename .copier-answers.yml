@@ -1,0 +1,21 @@
+# Changes here will be overwritten by Copier.
+_commit: 1.6.1
+_src_path: gh:pawamoy/copier-uv
+author_email: dev@pawamoy.fr
+author_fullname: Timothée Mazzucotelli
+author_username: pawamoy
+copyright_date: '2025'
+copyright_holder: Timothée Mazzucotelli
+copyright_holder_email: dev@pawamoy.fr
+copyright_license: ISC
+insiders: false
+project_description: Maintainers store configuration in their repository, users call
+    the tool to generate high quality bug reports easily.
+project_name: BugReport
+python_package_command_line_name: bugreport
+python_package_distribution_name: bugreport
+python_package_import_name: bugreport
+repository_name: bugreport
+repository_namespace: pawamoy
+repository_provider: github.com
+
