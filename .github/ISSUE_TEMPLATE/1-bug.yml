@@ -25,43 +25,82 @@ body:
     value: |
       <!--
       bugreport:
-      - id: mre-option
-        description: |
-          The next section is about providing a Minimal Reproducible Example (MRE).
-          You have two options to provide one:
-        choices:
-          1: |
-            Write the path to a local file or folder, or the URL to a public Git repository,
-            as well as commands to run to reproduce the issue, or the path to a local script
-            containing these commands.
-          2: Write the code and commands to run to reproduce the issue directly in the text area.
-      - id: mre
-        when: mre-option == 1
-        inputs:
-        - id: mre-path
-          type: input
-          required: true
-          label: Path or URL
+        sections:
+        - title: Minimal Reproducible Example (MRE)
           description: |
-            Write the path to a local MRE (file or folder), or the URL to a public Git repository,
-            containing the code to reproduce the issue.
-          placeholder: Path or URL
-        - id: mre-commands
-          type: textarea
-          required: true
-          label: Commands
-          description: |
-            Write the commands to run to reproduce the issue, or the path to a local script
-            containing these commands.
-        output: |
-          {% if inputs["path"] | is_url %}
-          git clone {{ inputs["path"] }}
-          {% else %}
-          {% for file in inputs["path"] | ls %}
-          {{ file | cat }}
-          {% endfor %}
-          {% endif %}
-          {{ inputs["commands"] }}
+            Ths section is about providing a Minimal Reproducible Example (MRE).
+          inputs:
+          - id: mre_option
+            type: choice
+            required: true
+            description: |
+              You have a few options to provide an MRE:
+            options:
+              path: |
+                Path to a local file containing the MRE, or to a local folder containing the MRE.
+                The file lists dependencies using [inline script metadata][ism].
+                The folder is a valid Python project (pyproject.toml, sources, etc.)
+
+                [ism]: https://packaging.python.org/en/latest/specifications/inline-script-metadata/#example
+              url: |
+                URL to a public Git repository.
+                The repository is a valid Python project (pyproject.toml, sources, etc.)
+              code: |
+                Code to reproduce the issue directly in a text area.
+
+        - if: inputs.mre_option == "path"
+          inputs:
+          - id: mre_path
+            type: path
+            required: true
+            label: Path to file or folder.
+            description: Write the path to a local file or folder containing the MRE.
+            placeholder: path/to/file-or-folder
+
+        - if: inputs.mre_option == "url"
+          inputs:
+          - id: mre_url
+            type: input
+            required: true
+            label: URL to a public Git repository.
+            description: Write the URL to a public Git repository containing the MRE.
+            placeholder: https://github.com/username/repo
+
+        - if: inputs.mre_option == "code"
+          inputs:
+          - id: mre_code
+            type: textarea
+            required: true
+            highlight: python
+            label: Code to reproduce the issue.
+            description: Write code that reproduces the issue when ran.
+            placeholder: |
+              import bugreport
+              ...
+
+        - inputs:
+          - id: mre_commands
+            type: textarea
+            required: true
+            highlight: shell
+            label: Commands to run the MRE.
+            description: |
+              Write shell commands to run to reproduce the issue.
+              Assume you are already in a folder containing the MRE.
+            placeholder: uv run ...
+
+        - outputs:
+            mre: |
+              {% if inputs.mre_path %}
+                {{ inputs.mre_path | mre_path }}
+              {% elif inputs.mre_url %}
+                {% filter mre_url}
+                  git clone {{ inputs.mre_url }}
+                {% endfilter %}
+              {% elif inputs.mre_code %}
+                {{ inputs.mre_code | mre_code("python")}}
+              {% endif %}
+              {{ inputs.mre_commands | mre_commands }}
       -->
 
 - type: textarea
@@ -82,6 +121,29 @@ body:
       uv run python bug.py  # or any command/code showing the issue
       ```
 
+- type: markdown
+  attributes:
+    value: |
+      <!--
+      bugreport:
+        sections:
+        - title: Traceback
+          description: |
+            This section is about providing a traceback.
+          inputs:
+          - id: run_mre
+            type: boolean
+            required: true
+            label: Run the MRE?
+            description: |
+              Should we run the MRE to capture the output as traceback?
+
+        - if: inputs.run_mre
+          outputs:
+            traceback: |
+              {{ outputs.mre | run_mre }}
+      -->
+
 - type: textarea
   id: traceback
   validations:
@@ -92,7 +154,7 @@ body:
       Please provide the full error message / traceback if any, by pasting it below.
       This will be automatically formatted into a code block, so no need for backticks.
     placeholder: Paste the full traceback here.
-    render: pycon
+    render: python
 
 - type: textarea
   id: expected
@@ -102,6 +164,42 @@ body:
     label: Expected behavior
     description: Please provide a clear and concise description of what you expected to happen.
     placeholder: Describe the expected behavior here.
+
+- type: markdown
+  attributes:
+    value: |
+      <!--
+      bugreport:
+        sections:
+        - title: Environment information
+          description: |
+            This section is about providing environment information.
+          inputs:
+          - id: venv
+            type: path
+            required: false
+            label: Environment information
+            description: |
+              The next question is about providing environment information.
+              We will try to extract relevant information from a `.venv` virtualenv
+              in the current directory, if any. You can specify the path to a different one.
+            placeholder: path/to/venv
+            value: .venv
+          outputs:
+            environment: |
+              {% with info = inputs.venv | venv_info %}
+                - **System**: {{ info.platform }}
+                - **Python**: {{ info.interpreter_name }} {{ info.interpreter_version }} ({{ info.interpreter_path }})
+                - **Environment variables**:
+                  {% for name, value in info.env_vars("PYTHONPATH", "BUGREPORT*") %}
+                  - `{{ name }}`: `{{ value }}`
+                  {%- endfor %}
+                - **Installed packages**:
+                  {% for name, version in info.packages("bugreport") %}
+                  - `{{ name }}`: v{{ value }}
+                  {%- endfor %}
+              {% endwith %}
+      -->
 
 - type: textarea
   id: environment
