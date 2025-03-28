@@ -1,0 +1,51 @@
+/* Style for the entire application */
+App {
+    padding: 2;
+}
+
+/* Style for labels */
+Label {
+    padding: 0 1;
+    margin-bottom: 1;
+    text-style: bold;
+}
+
+/* Style for text areas */
+TextArea {
+    border: solid #ccc;
+    padding: 0 1;
+    margin-bottom: 2;
+    height: 10;
+}
+
+/* Style for inputs */
+Input {
+    border: solid #ccc;
+    padding: 1;
+    margin-bottom: 2;
+}
+
+/* Style for dropdowns */
+Select {
+    border: solid #ccc;
+    padding: 1;
+    margin-bottom: 2;
+}
+
+/* Style for checkboxes */
+Checkbox {
+    margin-bottom: 1;
+}
+
+/* Style for markdown */
+Markdown {
+    padding: 0 1;
+    background: $background;
+}
+
+/* Additional styling for form sections */
+FormSection {
+    margin-bottom: 4;
+    padding: 2;
+    border: solid #ddd;
+}

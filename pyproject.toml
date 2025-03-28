@@ -29,7 +29,10 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.10",
+    "textual[syntax]>=2.1",
+]
 
 [project.urls]
 Homepage = "https://pawamoy.github.io/bugreport"
@@ -77,6 +80,7 @@ dev = [
     "build>=1.2",
     "git-changelog>=2.5",
     "twine>=5.1",
+    "textual-dev>=1.7",
 
     # ci
     "duty>=1.4",
