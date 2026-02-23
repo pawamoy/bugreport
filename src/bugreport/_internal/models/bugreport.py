@@ -1,14 +1,11 @@
-from __future__ import annotations
+"""Bugreport metadata models used by issue-template enhancements."""
 
-from pathlib import Path
-from typing import Final, Literal, Union
+from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-InputType = Literal["string", "text", "choice", "choices", "boolean", "path"]
 
-
-class Input(BaseModel):
+class BugreportInput(BaseModel):
     """Input base model."""
 
     id: str
@@ -18,64 +15,67 @@ class Input(BaseModel):
     placeholder: str | None = None
 
 
-class StringInput(Input):
+class BugreportInputString(BugreportInput):
     """String input."""
 
-    type: Final = "string"
     highlight: str | None = None
     value: str | None = None
 
 
-class ChoiceInput(Input):
+class BugreportInputChoice(BugreportInput):
     """Choice input."""
 
-    type: Final = "choice"
     options: dict[str, str] | None = None
     value: str | None = None
 
 
-class ChoicesInput(Input):
+class BugreportInputChoices(BugreportInput):
     """Choices input."""
 
-    type: Final = "choices"
     options: dict[str, str] | None = None
     value: str | None = None
 
 
-class TextInput(Input):
+class BugreportInputText(BugreportInput):
     """Text input."""
 
-    type: Final = "text"
     highlight: str | None = None
     value: str | None = None
 
 
-class BooleanInput(Input):
+class BugreportInputBoolean(BugreportInput):
     """Boolean input."""
 
-    type: Final = "boolean"
     value: bool | None = None
 
 
-class PathInput(Input):
+class BugreportInputPath(BugreportInput):
     """Path input."""
 
-    type: Final = "path"
-    value: Path | None = None
+    value: str | None = None
 
 
-FormInput = Union[StringInput, ChoiceInput, ChoicesInput, TextInput, BooleanInput, PathInput]
+TypeBugreportInput = (
+    BugreportInputString
+    | BugreportInputChoice
+    | BugreportInputChoices
+    | BugreportInputText
+    | BugreportInputBoolean
+    | BugreportInputPath
+)
 
 
-class FormSection(BaseModel):
+class BugreportFormSection(BaseModel):
     """Section model."""
 
     title: str | None = None
     description: str | None = None
     condition: str | None = Field(default=None, alias="if")
-    inputs: list[FormInput] = Field(default_factory=list)
+    inputs: list[TypeBugreportInput] = Field(default_factory=list)
     outputs: dict[str, str] = Field(default_factory=dict)
 
 
-class Form(BaseModel):
-    sections: list[FormSection]
+class BugreportForm(BaseModel):
+    """Bugreport metadata root model."""
+
+    sections: list[BugreportFormSection] = Field(default_factory=list)
