@@ -31,6 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.10",
+    "jinja2>=3.1",
     "textual[syntax]>=2.1",
 ]
 
