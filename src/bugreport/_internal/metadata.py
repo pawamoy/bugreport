@@ -11,7 +11,7 @@ import yaml
 from jinja2 import Environment
 
 from bugreport._internal import debug
-from bugreport._internal.models.bugreport import Form as BugreportForm
+from bugreport._internal.models.bugreport import BugreportForm
 
 if TYPE_CHECKING:
     from collections.abc import Iterator

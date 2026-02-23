@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Self, Union
 
 from pydantic import BaseModel
 
@@ -57,20 +56,16 @@ class GitHubElementCheckboxes(BaseModel):
     required: bool = False
 
 
-TypeGitHubElement = Union[
-    GitHubElementMarkdown,
-    GitHubElementTextarea,
-    GitHubElementInput,
-    GitHubElementDropdown,
-    GitHubElementCheckboxes,
-]
+TypeGitHubElement = (
+    GitHubElementMarkdown | GitHubElementTextarea | GitHubElementInput | GitHubElementDropdown | GitHubElementCheckboxes
+)
 
 
 class GitHubForm(BaseModel):
     body: list[TypeGitHubElement]
 
     @classmethod
-    def from_data(cls, data: dict) -> Self:
+    def from_data(cls, data: dict) -> GitHubForm:
         """Create a Form instance from raw data."""
         body = []
         for element_data in data.get("body", []):
