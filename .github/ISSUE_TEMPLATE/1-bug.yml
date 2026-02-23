@@ -82,7 +82,7 @@ body:
           - id: mre_commands
             type: textarea
             required: true
-            highlight: shell
+            highlight: bash
             label: Commands to run the MRE.
             description: |
               Write shell commands to run to reproduce the issue.
@@ -94,11 +94,11 @@ body:
               {% if inputs.mre_path %}
                 {{ inputs.mre_path | mre_path }}
               {% elif inputs.mre_url %}
-                {% filter mre_url}
+                {% filter mre_url %}
                   git clone {{ inputs.mre_url }}
                 {% endfilter %}
               {% elif inputs.mre_code %}
-                {{ inputs.mre_code | mre_code("python")}}
+                {{ inputs.mre_code | mre_code("python") }}
               {% endif %}
               {{ inputs.mre_commands | mre_commands }}
       -->
