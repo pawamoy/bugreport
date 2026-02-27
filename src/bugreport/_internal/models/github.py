@@ -10,7 +10,6 @@ _logger = logging.getLogger("bugreport")
 class GitHubElementMarkdown(BaseModel):
     id: str | None = None
     value: str
-    required: bool = False
 
 
 class GitHubElementTextarea(BaseModel):
@@ -72,7 +71,7 @@ class GitHubForm(BaseModel):
             element_type = element_data.get("type")
             required = element_data.get("validations", {}).get("required", False)
             if element_type == "markdown":
-                element = GitHubElementMarkdown(**element_data["attributes"], required=required)
+                element = GitHubElementMarkdown(**element_data["attributes"])
             elif element_type == "textarea":
                 element = GitHubElementTextarea(**element_data["attributes"], required=required)
             elif element_type == "input":

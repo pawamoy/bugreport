@@ -10,18 +10,18 @@ from textual.widgets import Checkbox, Input, Label, Markdown, Select, TextArea
 
 from bugreport._internal.metadata import (
     evaluate_section_condition,
-    load_bugreport_metadata_from_github_form,
     render_output_template,
+    yield_bugreport_forms,
 )
 from bugreport._internal.models.bugreport import (
-    BugreportFormSection,
+    BugreportStep,
     BugreportInputBoolean,
     BugreportInputChoice,
     BugreportInputChoices,
     BugreportInputPath,
     BugreportInputString,
     BugreportInputText,
-    TypeBugreportInput,
+    TypeBugreportInput, BugreportForm,
 )
 from bugreport._internal.models.github import (
     GitHubElementCheckboxes,
@@ -40,36 +40,28 @@ class FormApp(App[None]):
     def __init__(self, issue_template: str = ".github/ISSUE_TEMPLATE/1-bug.yml", **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.issue_template = issue_template
-        self.github_form: GitHubForm | None = None
         self.form_inputs: dict[str, Any] = {}
         self.form_outputs: dict[str, str] = {}
-        self._section_containers: list[tuple[BugreportFormSection, Vertical]] = []
-        self._metadata_outputs: dict[str, str] = {}
-        self._metadata_textareas: dict[str, TextArea] = {}
 
     def compose(self) -> ComposeResult:
         with Path(self.issue_template).open(encoding="utf-8") as file:
             form_data = yaml.safe_load(file)
-        self.github_form = GitHubForm.from_data(form_data)
 
-        for element in self.github_form.body:
+        github_form = GitHubForm.from_data(form_data)
+        bugreport_form = BugreportForm.from_github(github_form)
+
+        for element in bugreport_form.body:
             yield from self._create_widgets(element)
             if isinstance(element, GitHubElementMarkdown):
-                for block in load_bugreport_metadata_from_github_form(element):
-                    for section in block.form.sections:
-                        container = Vertical(classes="metadata-section")
-                        self._section_containers.append((section, container))
-                        with container:
-                            if section.title:
-                                yield Label(section.title)
-                            if section.description:
-                                yield Markdown(section.description)
+                for form in yield_bugreport_forms(element.value):
+                    for section in form.body:
+                        with Vertical(classes="metadata-section"):
+                            yield from self._create_label(section.title)
+                            yield from self._create_description(section.description)
                             for metadata_input in section.inputs:
                                 yield from self._create_metadata_input_widgets(metadata_input)
-                        yield container
-                        self._metadata_outputs.update(section.outputs)
 
-        self._update_metadata_sections_and_outputs()
+        # self._update_metadata_sections_and_outputs()
 
     def _create_label(self, label: str | None) -> ComposeResult:
         if label:
@@ -79,44 +71,44 @@ class FormApp(App[None]):
         if description:
             yield Markdown(description)
 
-    def _create_textarea(self, attributes: GitHubElementTextarea, element_id: str | None = None) -> ComposeResult:
-        yield from self._create_label(attributes.label)
-        yield from self._create_description(attributes.description)
+    def _create_textarea(self, element: GitHubElementTextarea, element_id: str | None = None) -> ComposeResult:
+        yield from self._create_label(element.label)
+        yield from self._create_description(element.description)
         textarea_id = f"github__{element_id}" if element_id else None
-        if attributes.render:
-            textarea = TextArea.code_editor(attributes.value or "", language=attributes.render, id=textarea_id)
+        if element.render:
+            textarea = TextArea.code_editor(element.value or "", language=element.render, id=textarea_id)
         else:
-            textarea = TextArea(attributes.value or "", id=textarea_id)
+            textarea = TextArea(element.value or "", id=textarea_id)
         if element_id:
             self._metadata_textareas[element_id] = textarea
         yield textarea
 
-    def _create_input(self, attributes: GitHubElementInput, element_id: str | None = None) -> ComposeResult:
-        yield from self._create_label(attributes.label)
-        yield from self._create_description(attributes.description)
+    def _create_input(self, element: GitHubElementInput, element_id: str | None = None) -> ComposeResult:
+        yield from self._create_label(element.label)
+        yield from self._create_description(element.description)
         yield Input(
-            attributes.value,
-            placeholder=attributes.placeholder or "",
+            element.value,
+            placeholder=element.placeholder or "",
             id=f"github__{element_id}" if element_id else None,
         )
 
-    def _create_dropdown(self, attributes: GitHubElementDropdown, element_id: str | None = None) -> ComposeResult:
-        yield from self._create_label(attributes.label)
-        yield from self._create_description(attributes.description)
-        value = attributes.options[attributes.default] if attributes.default is not None else Select.BLANK
+    def _create_dropdown(self, element: GitHubElementDropdown, element_id: str | None = None) -> ComposeResult:
+        yield from self._create_label(element.label)
+        yield from self._create_description(element.description)
+        value = element.options[element.default] if element.default is not None else Select.BLANK
         select = Select(
-            [(option, option) for option in attributes.options],
+            [(option, option) for option in element.options],
             value=value,
-            allow_blank=attributes.default is None,
+            allow_blank=element.default is None,
             type_to_search=False,
             id=f"github__{element_id}" if element_id else None,
         )
         yield select
 
-    def _create_checkboxes(self, attributes: GitHubElementCheckboxes, element_id: str | None = None) -> ComposeResult:
-        yield from self._create_label(attributes.label)
-        yield from self._create_description(attributes.description)
-        for index, option in enumerate(attributes.options):
+    def _create_checkboxes(self, element: GitHubElementCheckboxes, element_id: str | None = None) -> ComposeResult:
+        yield from self._create_label(element.label)
+        yield from self._create_description(element.description)
+        for index, option in enumerate(element.options):
             suffix = f"{element_id}_{index}" if element_id else str(index)
             yield Checkbox(
                 option.label,
@@ -125,8 +117,8 @@ class FormApp(App[None]):
                 id=f"github__{suffix}",
             )
 
-    def _create_markdown(self, attributes: GitHubElementMarkdown) -> ComposeResult:
-        yield Markdown(attributes.value)
+    def _create_markdown(self, element: GitHubElementMarkdown) -> ComposeResult:
+        yield Markdown(element.value)
 
     def _create_widgets(self, element: TypeGitHubElement) -> ComposeResult:
         if isinstance(element, GitHubElementTextarea):
@@ -148,21 +140,19 @@ class FormApp(App[None]):
         yield from self._create_description(metadata_input.description)
 
         if isinstance(metadata_input, (BugreportInputString, BugreportInputPath)):
-            value = str(metadata_input.value) if metadata_input.value is not None else ""
+            value = metadata_input.value or ""
             self.form_inputs.setdefault(metadata_input.id, value)
             yield Input(value=value, placeholder=metadata_input.placeholder or "", id=metadata_input.id)
-            return
 
-        if isinstance(metadata_input, BugreportInputText):
+        elif isinstance(metadata_input, BugreportInputText):
             value = metadata_input.value or ""
             self.form_inputs.setdefault(metadata_input.id, value)
             if metadata_input.highlight:
                 yield TextArea.code_editor(value, language=metadata_input.highlight, id=metadata_input.id)
             else:
                 yield TextArea(value, id=metadata_input.id)
-            return
 
-        if isinstance(metadata_input, BugreportInputChoice):
+        elif isinstance(metadata_input, BugreportInputChoice):
             options = list((metadata_input.options or {}).items())
             if not options:
                 return
@@ -175,17 +165,15 @@ class FormApp(App[None]):
                 type_to_search=False,
                 id=metadata_input.id,
             )
-            return
 
-        if isinstance(metadata_input, BugreportInputChoices):
+        elif isinstance(metadata_input, BugreportInputChoices):
             selected = set(metadata_input.value.split(",")) if metadata_input.value else set()
             self.form_inputs.setdefault(metadata_input.id, sorted(selected))
             for option_key, option_label in (metadata_input.options or {}).items():
                 checkbox_id = f"{metadata_input.id}__{option_key}"
                 yield Checkbox(option_label, value=option_key in selected, id=checkbox_id)
-            return
 
-        if isinstance(metadata_input, BugreportInputBoolean):
+        elif isinstance(metadata_input, BugreportInputBoolean):
             value = bool(metadata_input.value)
             self.form_inputs.setdefault(metadata_input.id, value)
             label = metadata_input.placeholder or metadata_input.label or metadata_input.id

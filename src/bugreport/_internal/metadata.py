@@ -17,8 +17,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
-    from bugreport._internal.models.github import GitHubElementMarkdown
-
 
 _logger = logging.getLogger("bugreport")
 
@@ -27,14 +25,6 @@ _BUGREPORT_HTML_COMMENT_RE = re.compile(r"<!--(?P<content>.*?)-->", re.DOTALL)
 _BUGREPORT_KEY = "bugreport"
 _TRUE_CONDITION = re.compile(r"^inputs\.([A-Za-z_][A-Za-z0-9_]*)$")
 _EQUALS_CONDITION = re.compile(r'^inputs\.([A-Za-z_][A-Za-z0-9_]*)\s*==\s*(["\'])(.*?)\2$')
-
-
-@dataclass(frozen=True)
-class MetadataBlock:
-    """Metadata block extracted from a markdown element."""
-
-    raw: str
-    form: BugreportForm
 
 
 class _TemplateVenvInfo:
@@ -76,7 +66,7 @@ def _to_namespace(data: dict[str, Any]) -> SimpleNamespace:
     return SimpleNamespace(**data)
 
 
-def _to_block(content: str) -> MetadataBlock | None:
+def _to_block(content: str) -> BugreportForm | None:
     try:
         loaded = yaml.safe_load(content)
     except yaml.YAMLError as error:
@@ -87,19 +77,14 @@ def _to_block(content: str) -> MetadataBlock | None:
     root = loaded.get(_BUGREPORT_KEY)
     if not isinstance(root, dict):
         return None
-    return MetadataBlock(raw=content, form=BugreportForm.model_validate(root))
+    return BugreportForm.model_validate(root)
 
 
-def iter_bugreport_metadata_blocks(markdown: str) -> Iterator[MetadataBlock]:
-    """Extract bugreport metadata blocks from markdown HTML comments."""
+def yield_bugreport_forms(markdown: str) -> Iterator[BugreportForm]:
+    """Extract bugreport forms from markdown HTML comments."""
     for match in _BUGREPORT_HTML_COMMENT_RE.finditer(markdown):
         if block := _to_block(match.group("content")):
             yield block
-
-
-def load_bugreport_metadata_from_github_form(element: GitHubElementMarkdown) -> list[MetadataBlock]:
-    """Load bugreport metadata from a GitHub form element."""
-    return list(iter_bugreport_metadata_blocks(element.value))
 
 
 def evaluate_section_condition(condition: str | None, inputs: dict[str, Any]) -> bool:
