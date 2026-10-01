@@ -1,9 +1,26 @@
+# SPDX-License-Identifier: ISC
+#
+# ISC License
+#
+# Copyright (c) 2025, Timothée Mazzucotelli and contributors
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 from __future__ import annotations
 
 import fnmatch
 import logging
 import re
-from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 
@@ -88,7 +105,11 @@ def yield_bugreport_forms(markdown: str) -> Iterator[BugreportForm]:
 
 
 def evaluate_section_condition(condition: str | None, inputs: dict[str, Any]) -> bool:
-    """Evaluate a minimal condition syntax used by metadata sections."""
+    """Check an input's truth value or compare it with a quoted string.
+
+    Conditions support `inputs.name` and `inputs.name == "value"`.
+    Empty conditions return `True`; unsupported conditions return `False`.
+    """
     if not condition:
         return True
     if (match := _TRUE_CONDITION.fullmatch(condition.strip())) is not None:

@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: ISC
+#
+# ISC License
+#
+# Copyright (c) 2025, Timothée Mazzucotelli and contributors
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -14,14 +32,15 @@ from bugreport._internal.metadata import (
     yield_bugreport_forms,
 )
 from bugreport._internal.models.bugreport import (
-    BugreportStep,
     BugreportInputBoolean,
     BugreportInputChoice,
     BugreportInputChoices,
     BugreportInputPath,
     BugreportInputString,
     BugreportInputText,
-    TypeBugreportInput, BugreportForm,
+    BugreportMarkdown,
+    BugreportStep,
+    TypeBugreportInput,
 )
 from bugreport._internal.models.github import (
     GitHubElementCheckboxes,
@@ -35,31 +54,47 @@ from bugreport._internal.models.github import (
 
 
 class FormApp(App[None]):
+    """Display a GitHub issue form and its bugreport metadata in a terminal."""
+
     CSS_PATH = Path(__file__).parent / "forms.tcss"
+    """Stylesheet for the form widgets."""
 
     def __init__(self, issue_template: str = ".github/ISSUE_TEMPLATE/1-bug.yml", **kwargs: Any) -> None:
+        """Set the issue-template path and pass other options to the Textual app."""
         super().__init__(**kwargs)
         self.issue_template = issue_template
+        """Path to the GitHub issue-template YAML file."""
         self.form_inputs: dict[str, Any] = {}
+        """Current input values, keyed by input identifier."""
         self.form_outputs: dict[str, str] = {}
+        """Rendered output values, keyed by output name."""
+        self._metadata_textareas: dict[str, TextArea] = {}
+        self._section_containers: list[tuple[BugreportStep, Vertical]] = []
 
     def compose(self) -> ComposeResult:
+        """Read the issue template and create its form widgets."""
         with Path(self.issue_template).open(encoding="utf-8") as file:
             form_data = yaml.safe_load(file)
 
         github_form = GitHubForm.from_data(form_data)
-        bugreport_form = BugreportForm.from_github(github_form)
 
-        for element in bugreport_form.body:
+        for element in github_form.body:
             yield from self._create_widgets(element)
             if isinstance(element, GitHubElementMarkdown):
                 for form in yield_bugreport_forms(element.value):
                     for section in form.body:
-                        with Vertical(classes="metadata-section"):
+                        if isinstance(section, BugreportMarkdown):
+                            yield Markdown(section.value)
+                            continue
+                        with Vertical(classes="metadata-section") as container:
+                            self._section_containers.append((section, container))
                             yield from self._create_label(section.title)
                             yield from self._create_description(section.description)
-                            for metadata_input in section.inputs:
-                                yield from self._create_metadata_input_widgets(metadata_input)
+                            for metadata_input in section.body:
+                                if isinstance(metadata_input, BugreportMarkdown):
+                                    yield Markdown(metadata_input.value)
+                                else:
+                                    yield from self._create_metadata_input_widgets(metadata_input)
 
         # self._update_metadata_sections_and_outputs()
 
@@ -196,22 +231,22 @@ class FormApp(App[None]):
             if output_name in self._metadata_textareas:
                 self._metadata_textareas[output_name].load_text(value)
 
-    def on_input_changed(self, event: Input.Changed) -> None:
+    def _on_input_changed(self, event: Input.Changed) -> None:
         if event.input.id:
             self.form_inputs[event.input.id] = event.value
             self._update_metadata_sections_and_outputs()
 
-    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+    def _on_text_area_changed(self, event: TextArea.Changed) -> None:
         if event.text_area.id:
             self.form_inputs[event.text_area.id] = event.text_area.text
             self._update_metadata_sections_and_outputs()
 
-    def on_select_changed(self, event: Select.Changed) -> None:
+    def _on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id:
             self.form_inputs[event.select.id] = event.value
             self._update_metadata_sections_and_outputs()
 
-    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+    def _on_checkbox_changed(self, event: Checkbox.Changed) -> None:
         checkbox_id = event.checkbox.id
         if not checkbox_id:
             return

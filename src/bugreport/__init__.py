@@ -24,5 +24,60 @@ Maintainers store configuration in their repository, users call the tool to gene
 from __future__ import annotations
 
 from bugreport._internal.cli import get_parser, main
+from bugreport._internal.discover import discover
+from bugreport._internal.forms import FormApp
+from bugreport._internal.metadata import evaluate_section_condition, render_output_template, yield_bugreport_forms
+from bugreport._internal.models.bugreport import (
+    BugreportElement,
+    BugreportForm,
+    BugreportInput,
+    BugreportInputBoolean,
+    BugreportInputChoice,
+    BugreportInputChoices,
+    BugreportInputPath,
+    BugreportInputString,
+    BugreportInputText,
+    BugreportMarkdown,
+    BugreportStep,
+    TypeBugreportInput,
+)
+from bugreport._internal.models.github import (
+    GitHubCheckboxOption,
+    GitHubElementCheckboxes,
+    GitHubElementDropdown,
+    GitHubElementInput,
+    GitHubElementMarkdown,
+    GitHubElementTextarea,
+    GitHubForm,
+    TypeGitHubElement,
+)
 
-__all__: list[str] = ["get_parser", "main"]
+__all__: list[str] = [
+    "BugreportElement",
+    "BugreportForm",
+    "BugreportInput",
+    "BugreportInputBoolean",
+    "BugreportInputChoice",
+    "BugreportInputChoices",
+    "BugreportInputPath",
+    "BugreportInputString",
+    "BugreportInputText",
+    "BugreportMarkdown",
+    "BugreportStep",
+    "FormApp",
+    "GitHubCheckboxOption",
+    "GitHubElementCheckboxes",
+    "GitHubElementDropdown",
+    "GitHubElementInput",
+    "GitHubElementMarkdown",
+    "GitHubElementTextarea",
+    "GitHubForm",
+    "TypeBugreportInput",
+    "TypeGitHubElement",
+    "discover",
+    "evaluate_section_condition",
+    "get_parser",
+    "main",
+    "render_output_template",
+    "yield_bugreport_forms",
+]
